@@ -27,9 +27,7 @@ public class OnJoinListener implements Listener {
 				return;
 			}
 
-			final String materialString = config.getString("item");
-
-			final ItemBuilder builder = Main.getItemFromMaterialString(player, materialString)
+			final ItemBuilder builder = Main.getSelectorItem(player, config)
 					.coloredName(config.getString("item-name", "error"));
 
 			builder.coloredLore(config.getStringList("item-lore"));

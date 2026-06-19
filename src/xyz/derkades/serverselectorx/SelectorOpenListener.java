@@ -1,6 +1,5 @@
 package xyz.derkades.serverselectorx;
 
-import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -37,22 +36,7 @@ public class SelectorOpenListener implements Listener {
 				continue;
 			}
 
-			if (!config.isString("item")) {
-				continue;
-			}
-
-			if (config.getString("item").equalsIgnoreCase("NONE")){
-				continue;
-			}
-
-			final String string = config.getString("item");
-			Material material = Material.getMaterial(string);
-
-			if (material == null){
-				material = Material.STONE;
-			}
-
-			if (player.getInventory().getItemInMainHand().getType() != material){
+			if (!Main.isSelectorItem(player.getInventory().getItemInMainHand(), config)) {
 				continue;
 			}
 

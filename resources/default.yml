@@ -11,8 +11,13 @@ item-lore:
 - 'Line 1'
 - 'Line 2'
 
-# The name of the server selector item.
+# The name of the server selector item (vanilla Material, or head:<uuid|auto>).
+# Used as a fallback when 'ia-item' is unset or cannot be resolved.
 item: COMPASS
+# Optional: an ItemsAdder custom item (namespaced id) to use for the selector instead.
+# If ItemsAdder is installed and this item exists, it is used; otherwise SSX falls back
+# to the 'item' above. Remove this line to always use the vanilla 'item'.
+ia-item: mcicons:icon_ender_chest
 
 # Give the item when a player joins?
 on-join: true

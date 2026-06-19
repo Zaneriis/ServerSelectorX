@@ -7,7 +7,10 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import dev.lone.itemsadder.api.CustomStack;
 import xyz.derkades.derkutils.bukkit.Colors;
 import xyz.derkades.derkutils.bukkit.ItemBuilder;
 import xyz.derkades.serverselectorx.utils.PingManager;
@@ -145,6 +148,48 @@ public class Main extends JavaPlugin {
 				return new ItemBuilder(Material.COBBLESTONE);
 			}
 		}
+	}
+
+	/**
+	 * Builds the selector item for a menu. If the config declares an {@code ia-item}
+	 * (an ItemsAdder namespaced id, e.g. {@code mcicons:icon_ender_chest}) that resolves,
+	 * that ItemsAdder custom item is used. Otherwise (no {@code ia-item}, ItemsAdder absent,
+	 * or item not yet loaded) it falls back to the vanilla {@code item} material.
+	 */
+	static ItemBuilder getSelectorItem(final Player player, final FileConfiguration config) {
+		final String iaId = config.getString("ia-item");
+		if (iaId != null && !iaId.isEmpty()) {
+			final CustomStack stack = CustomStack.getInstance(iaId);
+			if (stack != null) {
+				return new ItemBuilder(stack.getItemStack());
+			}
+			getPlugin().getLogger().warning("ItemsAdder item '" + iaId
+					+ "' introuvable (ItemsAdder absent ou pas encore charge). Fallback sur le champ 'item'.");
+		}
+		return getItemFromMaterialString(player, config.getString("item"));
+	}
+
+	/**
+	 * Whether {@code stack} is the selector item for a menu. Mirrors {@link #getSelectorItem}:
+	 * if {@code ia-item} is set and resolvable, matches the ItemsAdder id of the held item;
+	 * otherwise matches the vanilla {@code item} material.
+	 */
+	static boolean isSelectorItem(final ItemStack stack, final FileConfiguration config) {
+		final String iaId = config.getString("ia-item");
+		if (iaId != null && !iaId.isEmpty() && CustomStack.getInstance(iaId) != null) {
+			final CustomStack held = CustomStack.byItemStack(stack);
+			return held != null && held.getNamespacedID().equals(iaId);
+		}
+
+		if (!config.isString("item") || config.getString("item").equalsIgnoreCase("NONE")) {
+			return false;
+		}
+
+		Material material = Material.getMaterial(config.getString("item"));
+		if (material == null) {
+			material = Material.STONE;
+		}
+		return stack.getType() == material;
 	}
 
 	public static void teleportPlayerToServer(final Player player, final String server){

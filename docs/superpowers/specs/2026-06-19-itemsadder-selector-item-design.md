@@ -1,14 +1,25 @@
-# Item du selector forcé à un item ItemsAdder
+# Item du selector via un item ItemsAdder (champ `ia-item` configurable)
 
 **Date:** 2026-06-19
-**Branche:** free
-**Statut:** Approuvé
+**Branche:** itemsadder-selector-item
+**Statut:** Implémenté
 
 ## Objectif
 
-Forcer l'item du server selector à être l'item custom ItemsAdder `mcicons:icon_ender_chest`,
-en dur dans le code source. Le champ `item:` des fichiers de menu n'est plus utilisé pour
-déterminer l'item du selector.
+Permettre que l'item du server selector soit un item custom ItemsAdder, configurable par
+menu via un nouveau champ `ia-item`. Si ItemsAdder est installé et que l'item existe, il est
+utilisé ; sinon SSX retombe (fallback) sur le champ vanilla `item:` existant.
+
+Exemple (`default.yml`) :
+
+```yaml
+item: COMPASS
+ia-item: mcicons:icon_ender_chest
+```
+
+> **Note d'historique :** une première version de ce spec forçait l'item *en dur*
+> (`mcicons:icon_ender_chest` hardcodé, champ `item:` ignoré). Cette décision a été
+> remplacée par l'approche configurable avec fallback décrite ici.
 
 ## Contexte
 
@@ -24,14 +35,18 @@ L'item du selector intervient à 3 endroits dans le code :
 
 ## Décisions
 
-- **Hardcodé en dur** : l'id ItemsAdder est une constante dans le code, le champ `item:` du yml est ignoré pour le selector.
-- **Accès API via dépendance Maven `provided`** : `com.github.LoneDev6:api-itemsadder` via JitPack (non bundlée), pas de réflexion. (Le repo historique `repo.devs.beer` est injoignable — DNS HS ; JitPack est le canal officiel. Version `3.6.1`, déjà en cache `~/.m2`. Package Java inchangé : `dev.lone.itemsadder.api`.)
+- **Configurable, pas hardcodé** : nouveau champ `ia-item` (id ItemsAdder namespacé) lu par menu.
+- **Fallback sur `item:`** : si `ia-item` est absent, ou si ItemsAdder n'est pas chargé, ou si
+  l'item n'existe pas / n'est pas encore chargé → on utilise le champ vanilla `item:` comme avant.
+- **Accès API via dépendance Maven `provided`** : `com.github.LoneDev6:api-itemsadder` via JitPack
+  (non bundlée), pas de réflexion. (Le repo historique `repo.devs.beer` est injoignable — DNS HS ;
+  JitPack est le canal officiel. Version `3.6.1`, déjà en cache `~/.m2`. Package Java : `dev.lone.itemsadder.api`.)
 
 ## Modifications
 
 ### 1. `pom.xml`
 
-Ajouter le repository et la dépendance (scope `provided`, non shadée) :
+Ajouter le repository JitPack et la dépendance (scope `provided`, non shadée) :
 
 ```xml
 <repository>
@@ -63,23 +78,50 @@ softdepend: [PlaceholderAPI, ItemsAdder]
 
 ### 3. `Main.java`
 
-Ajouter une constante publique et un helper centralisé de construction de l'item du selector :
+Deux helpers symétriques (construction + détection), partageant la même logique
+`ia-item` sinon fallback `item:` :
 
 ```java
-public static final String SELECTOR_IA_ID = "mcicons:icon_ender_chest";
+/**
+ * Construit l'item du selector pour un menu. Si la config déclare un `ia-item`
+ * (id ItemsAdder, ex. `mcicons:icon_ender_chest`) qui résout, cet item custom est
+ * utilisé. Sinon (pas d'`ia-item`, ItemsAdder absent, ou item pas encore chargé)
+ * fallback sur le Material vanilla `item:`.
+ */
+static ItemBuilder getSelectorItem(final Player player, final FileConfiguration config) {
+    final String iaId = config.getString("ia-item");
+    if (iaId != null && !iaId.isEmpty()) {
+        final CustomStack stack = CustomStack.getInstance(iaId);
+        if (stack != null) {
+            return new ItemBuilder(stack.getItemStack());
+        }
+        getPlugin().getLogger().warning("ItemsAdder item '" + iaId
+                + "' introuvable (ItemsAdder absent ou pas encore charge). Fallback sur le champ 'item'.");
+    }
+    return getItemFromMaterialString(player, config.getString("item"));
+}
 
 /**
- * Construit l'item ItemsAdder du selector. Renvoie un fallback COMPASS (avec un warning
- * dans les logs) si ItemsAdder est absent ou si l'item n'est pas encore chargé.
+ * Indique si `stack` est l'item du selector d'un menu. Miroir de getSelectorItem :
+ * si `ia-item` est défini et résolvable, compare l'id ItemsAdder de l'item en main ;
+ * sinon compare le Material vanilla `item:`.
  */
-static ItemBuilder getSelectorItem(final Player player) {
-    final CustomStack stack = CustomStack.getInstance(SELECTOR_IA_ID);
-    if (stack == null) {
-        Main.getPlugin().getLogger().warning(
-            "ItemsAdder item '" + SELECTOR_IA_ID + "' introuvable (ItemsAdder absent ou pas encore chargé). Fallback sur COMPASS.");
-        return new ItemBuilder(Material.COMPASS);
+static boolean isSelectorItem(final ItemStack stack, final FileConfiguration config) {
+    final String iaId = config.getString("ia-item");
+    if (iaId != null && !iaId.isEmpty() && CustomStack.getInstance(iaId) != null) {
+        final CustomStack held = CustomStack.byItemStack(stack);
+        return held != null && held.getNamespacedID().equals(iaId);
     }
-    return new ItemBuilder(stack.getItemStack());
+
+    if (!config.isString("item") || config.getString("item").equalsIgnoreCase("NONE")) {
+        return false;
+    }
+
+    Material material = Material.getMaterial(config.getString("item"));
+    if (material == null) {
+        material = Material.STONE;
+    }
+    return stack.getType() == material;
 }
 ```
 
@@ -88,63 +130,61 @@ les menus (sections `online`/`offline`/`dynamic`), qui ne sont pas concernés pa
 
 ### 4. `OnJoinListener.java`
 
-Remplacer la construction de l'item depuis le champ `item:` par l'helper hardcodé :
+Remplacer la construction de l'item depuis le champ `item:` par l'helper :
 
 - Avant : `Main.getItemFromMaterialString(player, config.getString("item"))`
-- Après : `Main.getSelectorItem(player)`
+- Après : `Main.getSelectorItem(player, config)`
 
 Le `item-name` et le `item-lore` du yml continuent de s'appliquer (`.coloredName(...)`,
 `.coloredLore(...)`). Le reste de la logique (`inv-slot`, `only-in-worlds`, slot `-1` auto) est conservé.
 
 ### 5. `SelectorOpenListener.java`
 
-Remplacer la comparaison de `Material` par une détection ItemsAdder. À la place de :
+Remplacer toute la logique de matching par `Material` par un appel à `Main.isSelectorItem` :
 
 ```java
-final String string = config.getString("item");
-Material material = Material.getMaterial(string);
-if (material == null) material = Material.STONE;
-if (player.getInventory().getItemInMainHand().getType() != material) continue;
+if (!Main.isSelectorItem(player.getInventory().getItemInMainHand(), config)) {
+    continue;
+}
 ```
 
-utiliser :
-
-```java
-final CustomStack held = CustomStack.byItemStack(player.getInventory().getItemInMainHand());
-final boolean isSelector = held != null && held.getNamespacedID().equals(Main.SELECTOR_IA_ID);
-if (!isSelector) continue;
-```
-
-Comportement conservé : on parcourt les configs, on saute celles dont `item:` vaut `NONE`
-(opt-out), on vérifie la permission via `SelectorMenu.checkPermission`, et on ouvre le premier
-menu éligible. Pour le cas d'un selector unique (default.yml), cela ouvre ce menu.
+L'opt-out `item: NONE` reste géré (dans `isSelectorItem`, branche fallback). L'import
+`org.bukkit.Material` devient inutilisé et est supprimé. On vérifie ensuite la permission
+via `SelectorMenu.checkPermission`, puis on ouvre le premier menu éligible.
 
 ### 6. `resources/default.yml`
 
-Mettre à jour le commentaire au-dessus du champ `item:` pour signaler qu'il est désormais
-ignoré pour le selector (l'item est forcé à `mcicons:icon_ender_chest` en dur). Le champ est
-conservé pour compatibilité et pour l'opt-out `NONE`.
+Documenter les deux champs : `item` (fallback vanilla) et `ia-item` (item ItemsAdder optionnel) :
+
+```yaml
+# The name of the server selector item (vanilla Material, or head:<uuid|auto>).
+# Used as a fallback when 'ia-item' is unset or cannot be resolved.
+item: COMPASS
+# Optional: an ItemsAdder custom item (namespaced id) to use for the selector instead.
+# If ItemsAdder is installed and this item exists, it is used; otherwise SSX falls back
+# to the 'item' above. Remove this line to always use the vanilla 'item'.
+ia-item: mcicons:icon_ender_chest
+```
 
 ## Hors périmètre
 
 - `getItemFromMaterialString` : inchangé (items des menus).
 - `Stats.java` : inchangé (déjà null-safe).
-- Aucun nouveau champ de configuration : l'id ItemsAdder est volontairement en dur.
-- Pas de support d'item IA configurable (décision : hardcode).
 
 ## Gestion des erreurs
 
 - ItemsAdder absent / item pas encore chargé → `CustomStack.getInstance` renvoie `null` →
-  fallback `COMPASS` + warning log. Le plugin ne crash pas.
+  fallback sur le champ `item:` + warning log. Le plugin ne crash pas.
 - Détection (`CustomStack.byItemStack`) renvoie `null` pour les items non-IA → traité comme
-  « pas le selector » (pas d'ouverture de menu).
+  « pas le selector » quand `ia-item` est actif ; sinon comparaison vanilla.
 
 ## Vérification
 
-Pas de suite de tests dans ce projet. Vérification manuelle :
-1. `mvn clean package` réussit (build avec la dépendance `provided`).
+Pas de suite de tests dans ce projet. Vérification :
+1. `mvn clean package` réussit (build avec la dépendance `provided`) → **BUILD SUCCESS**,
+   jar produit, et aucune classe `dev/lone`/ItemsAdder dans le jar shadé.
 2. Sur un serveur Spigot 1.13+ avec ItemsAdder + le pack `mcicons` chargé :
    - Au join, le joueur reçoit l'item `mcicons:icon_ender_chest` avec le nom/lore configurés.
    - Clic droit en tenant cet item → le menu s'ouvre.
    - Tenir un autre item → le menu ne s'ouvre pas.
-3. Sans ItemsAdder installé : warning dans les logs, fallback COMPASS, pas de crash.
+3. Sans ItemsAdder installé (ou `ia-item` retiré) : fallback sur `item: COMPASS`, pas de crash.
