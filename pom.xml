@@ -119,6 +119,13 @@
 			<version>2.14.0</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.github.LoneDev6</groupId>
+			<artifactId>api-itemsadder</artifactId>
+			<version>3.6.1</version>
+			<scope>provided</scope>
+		</dependency>
+
 	</dependencies>
 
 	<repositories>
@@ -131,6 +138,11 @@
 		<repository>
 			<id>placeholderapi</id>
 			<url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
+		</repository>
+
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
 		</repository>
 
 	</repositories>
