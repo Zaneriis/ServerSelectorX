@@ -25,7 +25,7 @@ L'item du selector intervient à 3 endroits dans le code :
 ## Décisions
 
 - **Hardcodé en dur** : l'id ItemsAdder est une constante dans le code, le champ `item:` du yml est ignoré pour le selector.
-- **Accès API via dépendance Maven `provided`** : `dev.lone:api-itemsadder` (non bundlée), pas de réflexion.
+- **Accès API via dépendance Maven `provided`** : `com.github.LoneDev6:api-itemsadder` via JitPack (non bundlée), pas de réflexion. (Le repo historique `repo.devs.beer` est injoignable — DNS HS ; JitPack est le canal officiel. Version `3.6.1`, déjà en cache `~/.m2`. Package Java inchangé : `dev.lone.itemsadder.api`.)
 
 ## Modifications
 
@@ -35,16 +35,16 @@ Ajouter le repository et la dépendance (scope `provided`, non shadée) :
 
 ```xml
 <repository>
-  <id>devsbeer</id>
-  <url>https://repo.devs.beer/</url>
+  <id>jitpack.io</id>
+  <url>https://jitpack.io</url>
 </repository>
 ```
 
 ```xml
 <dependency>
-  <groupId>dev.lone</groupId>
+  <groupId>com.github.LoneDev6</groupId>
   <artifactId>api-itemsadder</artifactId>
-  <version><!-- dernière version stable du repo, à confirmer au build --></version>
+  <version>3.6.1</version>
   <scope>provided</scope>
 </dependency>
 ```

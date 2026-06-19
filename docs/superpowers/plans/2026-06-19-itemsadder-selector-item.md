@@ -6,7 +6,7 @@
 
 **Architecture:** Une constante d'id ItemsAdder + un helper centralisé dans `Main` construisent l'item via l'API `CustomStack`. `OnJoinListener` donne cet item au join ; `SelectorOpenListener` détecte l'item en main via `CustomStack.byItemStack`. Le champ `item:` du yml devient ignoré pour le selector.
 
-**Tech Stack:** Java 11, Spigot API 1.13.2, Maven (shade plugin), API ItemsAdder (`dev.lone:api-itemsadder`, scope `provided`).
+**Tech Stack:** Java 11, Spigot API 1.13.2, Maven (shade plugin), API ItemsAdder (`com.github.LoneDev6:api-itemsadder` via JitPack, scope `provided`).
 
 ## Global Constraints
 
@@ -28,48 +28,43 @@
 - Consumes: rien.
 - Produces: rend les classes `dev.lone.itemsadder.api.CustomStack` disponibles à la compilation (scope `provided`) pour les tâches 2 et 4.
 
-- [ ] **Step 1: Résoudre la version de `api-itemsadder`**
+> **Note (résolu) :** la dépendance ItemsAdder est publiée via **JitPack** (`com.github.LoneDev6:api-itemsadder`). Le repo historique `repo.devs.beer` est injoignable (DNS HS) ; JitPack est le canal officiel. La version **`3.6.1`** est déjà présente dans le cache `~/.m2` local (utilisée par le projet celestia), donc le build fonctionne hors-ligne. Le package Java reste `dev.lone.itemsadder.api`.
 
-Récupérer la dernière version publiée :
-
-Run: `curl -s https://repo.devs.beer/releases/dev/lone/api-itemsadder/maven-metadata.xml`
-Expected: un XML contenant `<latest>...</latest>` / `<release>...</release>`. Noter cette valeur.
-Si le repo est injoignable au moment du build, utiliser la valeur de repli connue : `3.6.1`.
-
-- [ ] **Step 2: Ajouter le repository**
+- [ ] **Step 1: Ajouter le repository**
 
 Dans `pom.xml`, à l'intérieur de `<repositories>`, ajouter :
 
 ```xml
 		<repository>
-			<id>devsbeer</id>
-			<url>https://repo.devs.beer/releases</url>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
 		</repository>
 ```
 
-- [ ] **Step 3: Ajouter la dépendance**
+- [ ] **Step 2: Ajouter la dépendance**
 
-Dans `pom.xml`, à l'intérieur de `<dependencies>`, ajouter (remplacer `VERSION` par la valeur du Step 1) :
+Dans `pom.xml`, à l'intérieur de `<dependencies>`, ajouter :
 
 ```xml
 		<dependency>
-			<groupId>dev.lone</groupId>
+			<groupId>com.github.LoneDev6</groupId>
 			<artifactId>api-itemsadder</artifactId>
-			<version>VERSION</version>
+			<version>3.6.1</version>
 			<scope>provided</scope>
 		</dependency>
 ```
 
-- [ ] **Step 4: Vérifier que la dépendance se résout**
+- [ ] **Step 3: Vérifier que la dépendance se résout**
 
-Run: `mvn -q dependency:resolve`
-Expected: BUILD SUCCESS, pas d'erreur "Could not resolve dependencies" pour `dev.lone:api-itemsadder`.
+Run: `mvn -q -o dependency:resolve` (mode hors-ligne, la 3.6.1 est en cache local)
+Expected: BUILD SUCCESS, pas d'erreur "Could not resolve dependencies" pour `com.github.LoneDev6:api-itemsadder`.
+Si le cache est absent, retirer `-o` pour laisser Maven télécharger depuis JitPack.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add pom.xml
-git commit -m "build: add ItemsAdder API as provided dependency"
+git commit -m "build: add ItemsAdder API (JitPack) as provided dependency"
 ```
 
 ---
