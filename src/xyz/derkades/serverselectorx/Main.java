@@ -151,6 +151,15 @@ public class Main extends JavaPlugin {
 	}
 
 	/**
+	 * Whether the ItemsAdder plugin is installed. Must be checked before touching any
+	 * {@code dev.lone.itemsadder.api} class, otherwise the JVM throws NoClassDefFoundError
+	 * when ItemsAdder (a soft dependency) is absent.
+	 */
+	static boolean isItemsAdderPresent() {
+		return Bukkit.getPluginManager().getPlugin("ItemsAdder") != null;
+	}
+
+	/**
 	 * Builds the selector item for a menu. If the config declares an {@code ia-item}
 	 * (an ItemsAdder namespaced id, e.g. {@code mcicons:icon_ender_chest}) that resolves,
 	 * that ItemsAdder custom item is used. Otherwise (no {@code ia-item}, ItemsAdder absent,
@@ -158,7 +167,7 @@ public class Main extends JavaPlugin {
 	 */
 	static ItemBuilder getSelectorItem(final Player player, final FileConfiguration config) {
 		final String iaId = config.getString("ia-item");
-		if (iaId != null && !iaId.isEmpty()) {
+		if (iaId != null && !iaId.isEmpty() && isItemsAdderPresent()) {
 			final CustomStack stack = CustomStack.getInstance(iaId);
 			if (stack != null) {
 				return new ItemBuilder(stack.getItemStack());
@@ -176,7 +185,7 @@ public class Main extends JavaPlugin {
 	 */
 	static boolean isSelectorItem(final ItemStack stack, final FileConfiguration config) {
 		final String iaId = config.getString("ia-item");
-		if (iaId != null && !iaId.isEmpty() && CustomStack.getInstance(iaId) != null) {
+		if (iaId != null && !iaId.isEmpty() && isItemsAdderPresent() && CustomStack.getInstance(iaId) != null) {
 			final CustomStack held = CustomStack.byItemStack(stack);
 			return held != null && held.getNamespacedID().equals(iaId);
 		}
