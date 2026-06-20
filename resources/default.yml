@@ -1,5 +1,5 @@
 # Number of rows of slots of your server selector menu. For example '2' will mean 2*9 = 18 slots. Max value is 6.
-rows: 2
+rows: 3
 
 # This will be displayed as the title of the menu.
 title: 'Server Selector'
@@ -23,7 +23,7 @@ ia-item: mcicons:icon_ender_chest
 on-join: true
 
 # What slot should the item be in? Specify -1 to automatically put it in the first available slot.
-inv-slot: 0
+inv-slot: 4
 
 # URL clickable message
 url-message: '&3&lClick here'
@@ -46,38 +46,27 @@ no-permission-message: "&cYou don't have permission to open this menu."
 menu:
 
   # Server item
-  3:
+  13:
   
     # Enter a server name to show server status and placeholders
-    ping-server: kitpvp
-    
+    ping-server: 'sauve-le-sherif'
+
     # Action to run when the item is clicked
-    action: 'srv:kitpvp'
+    action: 'srv:sauve-le-sherif'
 
     online:
-      item: DIAMOND_SWORD
-      name: '&aKitPvP Server'
+      item: HAY_BLOCK
+      name: '&6Sauve le shérif !'
       lore:
-       - 'There are {online} out of {max} players online.'
-       - 'Message of the day: {motd}'
+       - '&e{online} Joueurs en ligne'
+       - '&7&oPar Boule2Pain'
 
     offline:
-      item: WOODEN_SWORD
-      name: '&cKitPvP Server'
+      item: HAY_BLOCK
+      name: '&6Sauve le shérif !'
       lore:
-       - Ipsum lorem
-       - Amet sit dolor
-       - The server is offline
+       - '&cHors-ligne'
 
-  # Message item
-  5:
-    action: 'msg:Hello'
-    offline:
-      item: 'head:auto' # You can use head:auto to get the head of the player opening the menu, or head:someuuid to get the head of a specific player.
-      name: 'This is you!'
-      lore:
-       - This item does nothing
-  
   # No action item
   -1: # -1 means everything else
     action: 'none'
