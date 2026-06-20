@@ -112,14 +112,24 @@ public class SelectorMenu extends IconMenu {
 	}
 
 	private ConfigurationSection chooseSection(ConfigurationSection slotSection, Map<String, String> placeholders) {
-		if (!slotSection.getBoolean("ping-server")) {
+		final String serverId;
+		if (slotSection.isBoolean("ping-server")) {
+			// Legacy server pinging with configured ip and port
+			if (!slotSection.getBoolean("ping-server")) {
+				// Server pinging is turned off, get item info from 'offline' section
+				return slotSection.getConfigurationSection("offline");
+			}
+			final String ip = slotSection.getString("ip");
+			final int port = slotSection.getInt("port");
+			serverId = ip + ":" + port;
+		} else if (slotSection.isString("ping-server")) {
+			// New server pinging with automatic ip and port; the pinger is
+			// stored under the BungeeCord server name (see PingManager)
+			serverId = slotSection.getString("ping-server");
+		} else {
 			// Server pinging is turned off, get item info from 'offline' section
 			return slotSection.getConfigurationSection("offline");
 		}
-
-		final String ip = slotSection.getString("ip");
-		final int port = slotSection.getInt("port");
-		final String serverId = ip + ":" + port;
 
 		final ServerPinger pinger = PingTask.SERVER_INFO.get(serverId);
 

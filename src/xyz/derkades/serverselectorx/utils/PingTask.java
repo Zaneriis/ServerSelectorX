@@ -40,6 +40,11 @@ public class PingTask implements Runnable {
 		}
 
 		pinger.ping();
+
+		// Publish the (now refreshed) pinger so SelectorMenu.chooseSection can
+		// read the latest online/offline state, keyed by the same server name
+		// used in PingManager (ip:port for legacy, BungeeCord name otherwise).
+		SERVER_INFO.put(serverName, pinger);
 	}
 
 }
